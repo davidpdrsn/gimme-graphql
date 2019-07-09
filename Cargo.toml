@@ -1,0 +1,17 @@
+[package]
+name = "gimme-graphql"
+version = "0.1.0"
+authors = ["David Pedersen <david.pdrsn@gmail.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+diesel = { version = "1.4.1", features = ["postgres", "r2d2"] }
+dotenv = "0.14.1"
+env_logger = "0.6.2"
+juniper = "0.12.0"
+juniper-from-schema = "0.3.0"
+juniper_rocket = "0.3"
+r2d2 = "0.8.5"
+rocket = "0.4.2"
