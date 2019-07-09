@@ -6,13 +6,14 @@ use diesel::prelude::*;
 use gimme_graphql::{
     rocket_adapter::{
         rocket::{
+            fairing::AdHoc,
             http::Status,
             request::{FromRequest, Outcome, Request},
-            State,
+            Rocket, State,
         },
-        Rocket,
+        RocketAdapter,
     },
-    DbCon, DbConPool, GraphqlApp,
+    run_graphql_app, ConnectionManager, GraphqlApp, Pool, PooledConnection,
 };
 use juniper_from_schema::graphql_schema;
 
@@ -32,7 +33,7 @@ graphql_schema! {
 }
 
 pub struct Context {
-    pub db_con: DbCon<PgConnection>,
+    pub db_con: PooledConnection<ConnectionManager<PgConnection>>,
 }
 
 impl juniper::Context for Context {}
@@ -41,7 +42,7 @@ impl<'a, 'r> FromRequest<'a, 'r> for Context {
     type Error = ();
 
     fn from_request(request: &'a Request<'r>) -> Outcome<Context, ()> {
-        let db_pool = request.guard::<State<DbConPool<PgConnection>>>()?;
+        let db_pool = request.guard::<State<Pool<ConnectionManager<PgConnection>>>>()?;
 
         match db_pool.get() {
             Ok(db_con) => Outcome::Success(Context { db_con }),
@@ -74,13 +75,19 @@ impl MutationFields for Mutation {
 struct App;
 
 impl GraphqlApp for App {
-    type WebFramework = Rocket;
-    type DatabaseConnection = PgConnection;
+    type Adapter = RocketAdapter;
+    type Connection = PgConnection;
     type Query = Query;
     type Mutation = Mutation;
     type Context = Context;
+
+    fn configure_web_framework(&self, rocket: Rocket) -> Rocket {
+        rocket.attach(AdHoc::on_request("Request Printer", |_req, _data| {
+            log::debug!("Received request!");
+        }))
+    }
 }
 
 pub fn main() {
-    App::run();
+    run_graphql_app(App);
 }
