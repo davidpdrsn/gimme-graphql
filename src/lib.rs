@@ -2,6 +2,7 @@
 #![forbid(unknown_lints)]
 // #![deny(unused_imports, dead_code, unused_variables)]
 
+pub mod hyper_adapter;
 pub mod rocket_adapter;
 
 pub use diesel::r2d2::ConnectionManager;
@@ -18,6 +19,7 @@ pub fn run_graphql_app<App: GraphqlApp>(app: App) {
         graphql_path: app.graphql_path(),
         mount_graphiql_at: app.mount_graphiql_at(),
         mount_graphql_at: app.mount_graphql_at(),
+        port: app.port(),
     };
 
     App::Adapter::new().run(app, config);
@@ -54,8 +56,18 @@ pub trait GraphqlApp {
         Self::Query,
         Self::Mutation,
         Self::Context,
-    >>::Inner {
+>>::Inner{
         web_framework
+    }
+
+    fn port(&self) -> u16 {
+        if let Some(env_value) = std::env::var("PORT").ok() {
+            env_value
+                .parse()
+                .expect("failed to parse PORT env var to u16")
+        } else {
+            8000
+        }
     }
 
     fn graphql_path(&self) -> &'static str {
@@ -109,4 +121,5 @@ pub struct WebFrameworkConfig<Connection: 'static + diesel::Connection> {
     graphql_path: &'static str,
     mount_graphiql_at: &'static str,
     mount_graphql_at: &'static str,
+    port: u16,
 }

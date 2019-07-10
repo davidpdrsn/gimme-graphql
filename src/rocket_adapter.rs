@@ -1,6 +1,7 @@
-use crate::{GraphqlApp, Adapter, WebFrameworkConfig};
+use crate::{Adapter, GraphqlApp, WebFrameworkConfig};
 use juniper::{GraphQLType, RootNode};
 use juniper_rocket::GraphQLRequest;
+use rocket::config::{Config, Environment};
 use rocket::{
     data::{FromData, Transform},
     handler::{self, Handler},
@@ -46,9 +47,17 @@ where
             graphql_path,
             mount_graphiql_at,
             mount_graphql_at,
+            port,
         } = config;
 
-        let rocket = rocket::ignite()
+        let env = Environment::active()
+            .expect("failed to get active rocket env. Is the env var ROCKET_ENV set correctly?");
+        let rocket_config = Config::build(env)
+            .port(port)
+            .finalize()
+            .expect("failed to finalize rocket config");
+
+        let rocket = rocket::custom(rocket_config)
             .manage(database_connection_pool)
             .manage(juniper::RootNode::new(
                 Query::default(),
