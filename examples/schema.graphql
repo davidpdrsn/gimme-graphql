@@ -1,0 +1,17 @@
+schema {
+  query: Query
+  mutation: Mutation
+}
+
+type Query {
+  users(limit: Int = 20, offset: Int = 0): [User!]! @juniper(ownership: "owned")
+}
+
+type Mutation {
+  noop: Boolean!
+}
+
+type User {
+  id: ID! @juniper(ownership: "owned")
+}
+
